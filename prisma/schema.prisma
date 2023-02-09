@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  username    String    @unique
+  email       String    @unique
+  firstName   String?   @default(value: "")
+  lastName    String?
+  bio         String?
+  userId      String[]  @db.ObjectId
+  followers   User[]    @relation(name: "FollowRelation", fields: [userId], references: [id])
+  following   User[]    @relation(name: "FollowRelation", fields: [userId], references: [id])
+  posts       Post[]
+  likes       Like[]
+  comments    Comment[]
+  room        Room?     @relation(name: "RoomParticipants", fields: [roomId], references: [id])
+  roomId      String?   @db.ObjectId
+  messageFrom Message?  @relation(name: "MessageFrom")
+  messageTo   Message?  @relation(name: "MessageTo")
+  loginSecret String? // Remember to set this required
+}
+
+model Post {
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  location String
+  caption  String
+  user     User      @relation(fields: [userId], references: [id])
+  userId   String    @db.ObjectId
+  files    File[]
+  comments Comment[]
+  likes    Like[]
+}
+
+model Like {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String? @db.ObjectId
+  post   Post    @relation(fields: [postId], references: [id])
+  postId String  @db.ObjectId
+}
+
+model Comment {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  text   String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String @db.ObjectId
+}
+
+model File {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  url    String
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String @db.ObjectId
+}
+
+model Room {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  participants User[]    @relation("RoomParticipants")
+  messages     Message[]
+}
+
+model Message {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+  from      User    @relation(name: "MessageFrom", fields: [messageId], references: [id])
+  to        User    @relation(name: "MessageTo", fields: [messageId], references: [id])
+  messageId String  @unique @db.ObjectId
+  Room      Room?   @relation(fields: [roomId], references: [id])
+  roomId    String? @db.ObjectId
+}
